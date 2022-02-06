@@ -5,7 +5,7 @@ from pydantic import BaseModel
 class Reservation(BaseModel):
     name : str
     time: int
-    table_number: int
+    table: int
     
 client = MongoClient('mongodb://localhost', 27017)
 
@@ -25,24 +25,34 @@ app = FastAPI()
 @app.get("/reservation/by-name/{name}")
 def get_reservation_by_name(name:str):
     result = collection.find_one({"name": name})
-    return {
-        "name": result["name"],
-        "table": result["table"],
-        "time": result["time"]
-    }
 
-@app.get("reservation/by-table/{table}")
+    if result is not None:
+        return {
+            "name": result["name"],
+            "table": result["table"],
+            "time": result["time"]
+        }
+    return {"msg": "not found reservation"}
+
+@app.get("/reservation/by-table/{table}")
 def get_reservation_by_table(table: int):
     result = collection.find_one({"table": table})
-    return {
-        "name": result["name"],
-        "table": result["table"],
-        "time": result["time"]
-    }
+
+    results = collection.find()
+    for r in results:
+        print(r)
+
+    if result is not None:
+        return {
+            "name": result["name"],
+            "table": result["table"],
+            "time": result["time"]
+        }
+    return {"msg": "not found reservation"}
 
 @app.post("/reservation")
 def reserve(reservation : Reservation):
-    pass
+    return {"name": reservation.name}
 
 @app.put("/reservation/update/")
 def update_reservation(reservation: Reservation):
@@ -50,5 +60,6 @@ def update_reservation(reservation: Reservation):
 
 @app.delete("/reservation/delete/{name}/{table_number}")
 def cancel_reservation(name: str, table_number : int):
-    pass
+    collection.delete_one({"name": name, "table": table_number})
+    return {"msg": "deleted"}
 
