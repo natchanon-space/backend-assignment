@@ -73,7 +73,33 @@ def reserve(reservation : Reservation):
 
 @app.put("/reservation/update/")
 def update_reservation(reservation: Reservation):
-    pass
+    result = collection.find_one({"name": reservation.name})
+    
+    if result is None:
+        return {"msg": "reservation not found"}
+
+    reserved_table = []
+    reserved_time = []
+    results = collection.find()
+    for r in results:
+        if reservation.name != r["name"]:
+            reserved_table.append(r["table"])
+            reserved_time.append(r["time"])
+
+    if reservation.table in reserved_table:
+        return {"msg": f"table {reservation.table} is already reserved"}
+    if reservation.time in reserved_time:
+        return {"msg": f"at {reservation.time} is already reserved"}
+    
+    collection.update_one(
+        {"name": reservation.name}, 
+        {"$set": {
+            "name": reservation.name,
+            "table": reservation.table,
+            "time": reservation.time
+        }})
+    return {"msg": f"updated!"}
+    
 
 @app.delete("/reservation/delete/{name}/{table_number}")
 def cancel_reservation(name: str, table_number : int):
