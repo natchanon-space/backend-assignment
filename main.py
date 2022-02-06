@@ -38,10 +38,6 @@ def get_reservation_by_name(name:str):
 def get_reservation_by_table(table: int):
     result = collection.find_one({"table": table})
 
-    results = collection.find()
-    for r in results:
-        print(r)
-
     if result is not None:
         return {
             "name": result["name"],
@@ -52,7 +48,28 @@ def get_reservation_by_table(table: int):
 
 @app.post("/reservation")
 def reserve(reservation : Reservation):
-    return {"name": reservation.name}
+    reserved_table = []
+    reserved_name = []
+    reserved_time = []
+    results = collection.find()
+    for r in results:
+        reserved_name.append(r["name"])
+        reserved_table.append(r["table"])
+        reserved_time.append(r["time"])
+
+    if reservation.name in reserved_name:
+        return {"msg": f"{reservation.name} is already resererved"}
+    if reservation.table in reserved_table:
+        return {"msg": f"table {reservation.table} is already reserved"}
+    if reservation.time in reserved_time:
+        return {"msg": f"at {reservation.time} is already reserved"}
+    
+    collection.insert_one({
+        "name": reservation.name,
+        "table": reservation.table,
+        "time": reservation.time
+    })
+    return {"msg": f"done!"}
 
 @app.put("/reservation/update/")
 def update_reservation(reservation: Reservation):
